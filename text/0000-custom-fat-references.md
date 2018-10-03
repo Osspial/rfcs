@@ -16,20 +16,7 @@ Why are we doing this? What use cases does it support? What is the expected outc
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Explain the proposal as if it was already included in the language and you were teaching it to another Rust programmer. That generally means:
-
-- Introducing new named concepts.
-- Explaining the feature largely in terms of examples.
-- Explaining how Rust programmers should *think* about the feature, and how it should impact the way they use Rust. It should explain the impact as concretely as possible.
-- If applicable, provide sample error messages, deprecation warnings, or migration guidance.
-- If applicable, describe the differences between teaching this to existing Rust programmers and new Rust programmers.
-
-For implementation-oriented RFCs (e.g. for compiler internals), this section should focus on how compiler contributors should think about the change, and give examples of its concrete impact. For policy RFCs, this section should provide an example-driven introduction to the policy, and explain its impact in concrete terms.
-
-# Reference-level explanation
-[reference-level-explanation]: #reference-level-explanation
-
-Allow defining structs, unions, and enums as follows:
+This RFCS allows users to define structs as follows:
 
 ```rust
 struct &MyFatRef {
@@ -37,7 +24,9 @@ struct &MyFatRef {
 }
 ```
 
-When a type is defined with the above pattern, the following semantics apply to it:
+This new type is called a "reference struct". This has notably different properties than a normal
+struct:
+- Any types within the struct must implement `Copy`.
 - The type's structure entirely replaces the structure of references to that type.
     TODO PHRASE THIS BETTER
     ```rust
@@ -47,12 +36,14 @@ When a type is defined with the above pattern, the following semantics apply to 
     struct &SmolRef;
     assert_eq!(mem::size_of::<&SmolRef>(), 0);
     ```
-- Any instances of such a type *must* be defined behind a reference.
+- Any instances of a reference struct *must* be defined behind a reference.
     ```rust
     struct &MyFatRef(u64);
     let _ = &MyFatRef(36); // Allowed
     let _ = MyFatRef(63); // Not allowed
     ```
+- Except as an intermediate step, dereferencing a reference struct to obtain the underlying type
+  is illegal.
 
 Note that, for a given `struct NormalStruct(u64)`, taking a `&NormalStruct(_)` and a `&MyFatRef(_)`
 are fundamentally different operations, as `&MyFatRef(_)` has ownership of the data in the
@@ -79,83 +70,119 @@ fn return_ref_slice<T(i: isize) -> &'static [T] {
 }
 ```
 
-
-This RFC also defines a new lang item: `ops::FatRef`:
+## Case study: implementing a 2D slice
 
 ```rust
-#[lang = "fat_ref"]
-unsafe trait FatRef {
-    type Target: ?Sized;
-
-    fn points_to(&self) -> *mut Self::Target;
+struct Array2D {
+    data: Vec<u8>,
+    width: usize
 }
-```
 
-TODO: WHAT SHOULD BE DONE ABOUT USERS IMPLEMENTING `RefType` FOR NON-`&Type` TYPES?
+struct &Slice2D {
+    start: *mut u8,
+    width: usize,
+    // The distance between the start of one segment and the start of the next one.
+    stride: usize,
+    height: usize
+}
 
-`Deref` and `DerefMut` are automatically implemented for `T: FatRef`, and said implementations are
-explicitly non-specializable.
+impl Array2D {
+    fn new(width: usize, height: usize) -> Array2D {
+        Array2D {
+            data: vec![0; width * height]
+        }
+    }
 
-## Why not have users implement `Deref`/`DerefMut` directly?
+    fn width(&self) -> {self.width}
+    fn height(&self) -> {self.data.len() / self.width}
+}
 
-Currently, references expose semantics that aren't supported with `DerefMut`: using mutable references,
-it's possible to *borrow mutable data from an immutable variable*:
-
-```rust
-// We have a mutable variable `number`.
-let mut number = 43.0;
-
-// We now take a mutable reference to `number`. The `ref_mut` variable ITSELF
-// is not mutable, but it still allows us to mutate the underlying data.
-let ref_mut = &mut number;
-*ref_mut -= 2.0;
-```
-
-In contrast, take a given smart pointer struct, implementable today:
-
-```rust
-struct OurSmartPtr<'a>(&'a mut f32);
-
-impl<'a> Deref for OurSmartPtr<'a> {
-    type Target = f32;
-    fn deref(&self) -> &f32 {
-        self.0
+impl Deref for Array2D {
+    type Target = Slice2D;
+    fn deref(&self) -> &Slice2D {
+        &Slice2D {
+            start: self.data.as_ptr(),
+            width: self.width(),
+            stride: self.width(),
+            height: self.height()
+        }
     }
 }
-impl<'a> DerefMut for OurSmartPtr<'a> {
-    fn deref_mut(&mut self) -> &mut f32 {
-        self.0
+
+impl Slice2D {
+    fn get_columns(&self, column_range: Range<usize>) -> Option<&Slice2D> {
+        if column_range.start > column_range.end {
+            None
+        } else if column_range.end > self.width {
+            None
+        } else {
+            Some(&Slice2D {
+                start: unsafe{ self.start.offset(column_range.start) },
+                width: column_range.len(),
+                stride: self.stride,
+                height: self.height
+            })
+        }
+    }
+
+    fn get_rows(&self, row_range: Range<usize>) -> Option<&Slice2D> {
+        if row_range.start > row_range.end {
+            None
+        } else if row_range.end > self.height {
+            None
+        } else {
+            Some(&Slice2D {
+                start: unsafe{ self.start.offset(row_range.start * self.stride) },
+                width: self.width,
+                stride: self.stride,
+                height: row_range.len()
+            })
+        }
+    }
+}
+
+impl Index<usize> for Slice2D {
+    type Output = [u8];
+    fn index(&self, index: usize) -> &[u8] {
+        let slice_2d = self.get_rows(index..index + 1).unwrap();
+        assert_eq!(1, slice_2d.height);
+        unsafe{ slice::from_raw_parts(slice_2d.start, slice_2d.width) }
     }
 }
 ```
 
-If we tried to implement the original code with an immutable `OurSmartPtr` variable:
+Explain the proposal as if it was already included in the language and you were teaching it to another Rust programmer. That generally means:
+
+- Introducing new named concepts.
+- Explaining the feature largely in terms of examples.
+- Explaining how Rust programmers should *think* about the feature, and how it should impact the way they use Rust. It should explain the impact as concretely as possible.
+- If applicable, provide sample error messages, deprecation warnings, or migration guidance.
+- If applicable, describe the differences between teaching this to existing Rust programmers and new Rust programmers.
+
+For implementation-oriented RFCs (e.g. for compiler internals), this section should focus on how compiler contributors should think about the change, and give examples of its concrete impact. For policy RFCs, this section should provide an example-driven introduction to the policy, and explain its impact in concrete terms.
+
+# Reference-level explanation
+[reference-level-explanation]: #reference-level-explanation
+
+## `impl`s
+
+Like `[T]`, implementations on `&Types` can be created without the leading `&`:
 
 ```rust
-let smart_ptr = OurSmartPtr(&mut number);
-*smart_ptr += 0.9;
+struct &MyFatRef { }
+
+impl MyFatRef {
+    fn foo(&self) {
+        println!("called immutably!");
+    }
+
+    fn foo_ut(&mut self) {
+        println!("called mutably!");
+    }
+}
 ```
 
-The compiler throws an error:
-
-```rust
-error[E0596]: cannot borrow immutable local variable `smart_ptr` as mutable
-  --> src/main.rs:20:6
-  |
-1 |     let smart_ptr = OurSmartPtr(&mut number);
-  |         --------- consider changing this to `mut smart_ptr`
-2 |     *smart_ptr += 0.9;
-  |      ^^^^^^^^^ cannot borrow mutably
-```
-
-This is because `deref_mut()` takes a mutable reference to `self`, with which it *is* possible to
-mutate the smart pointer struct. Forcing this behavior would cause all custom fat references to
-behave fundamentally differently to in-language fat references.
-
-## Why does `points_to` return a pointer?
-
-Rust currently doesn't expose any mechanism for defining a reference to be *either* mutable or
-immutable, or allowing references being generic over mutability.
+Functions defined inside cannot take `self` as a parameter; they must use `&self` or `&mut self`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
