@@ -178,7 +178,7 @@ The license map is formatted as follows:
 
 Keys in the license map should be formatted as a SPDX license identifier (when available), optionally followed by a colon and the copyright holder's name if the license text is customized to each particular copyright holder. This isn't strictly enforced, but is followed by all official tooling. If the license identifier contains a colon, it can be escaped with two consecutive colons (`ANNOYING:IDENTIFIER` -> `ANNOYING::IDENTIFIER`).
 
-The `--licenses` argument is only valid for `crate-type`s that produce a binary file intended for redistribution (`bin`, `dylib`, `staticlib`, and `cdylib`). Other crate types will use the `--licenses` file specified by the nearest parent crate that accepts the `--licenses` flag. Attempting to pass the `--licenses` flag on an invalid crate types will result in an error. This is done to facilitate build artifact sharing. To illustrate, let's say we have a workspace that depends on a `licenses_markdown` crate, which calls `licenses!()` and render it into a Markdown file. Multiple crates in the workspace depend on this library:
+The `--licenses` argument is only valid for `crate-type`s that produce a binary file intended for redistribution (`bin`, `dylib`, `staticlib`, and `cdylib`). Other crate types will use the `--licenses` file specified by the nearest parent crate that accepts the `--licenses` flag. Attempting to pass the `--licenses` flag on an invalid crate types will result in an error. This is done to facilitate build artifact sharing. To illustrate, let's say we have a workspace that depends on a `licenses_markdown` crate, which calls `licenses!()` and renders it into a Markdown file. Multiple crates in the workspace depend on this library:
 
 ```
 workspace_crate_a: cdylib
@@ -191,7 +191,7 @@ workspace_crate_b: cdylib
     glutin: rlib
 ```
 
-`workspace_crate_a` and `workspace_crate_b` have different dependency tree, and as such have different license requirements. If the license data were baked into the `licenses_markdown` build artifacts, Cargo would have to recompile the crate whenever it got linked to a different top-level crate. Deferring `licenses` resolution to the higher-level crates allows Cargo to re-use the build artifacts from the lower-level crates. Now, let's say we add an additional crate that linked to `workspace_crate_a`, `workspace_crate_b`, and `licenses_markdown`:
+`workspace_crate_a` and `workspace_crate_b` have different dependency trees, and as such have different license requirements. If the license data were baked into the `licenses_markdown` build artifacts, Cargo would have to recompile the crate whenever it got linked to a different top-level crate. Deferring `licenses` resolution to the higher-level crates allows Cargo to re-use the build artifacts from the lower-level crates when building with different parents. Now, let's say we add an additional crate that linked to `workspace_crate_a`, `workspace_crate_b`, and `licenses_markdown`:
 
 ```
 workspace_executable: bin
@@ -214,9 +214,10 @@ Cargo splits the license string into multiple licenses on any of the following p
 - `/`
 - `,`
 - `\bOR\b`
+
 Additional patterns may be added as discovered in the ecosystem.
 
-Cargo will attempt to discover LICENSE files in the crate's root folder. Cargo will pull the `LICENSE` or `COPYRIGHT` file for single-licensed crates, and will make a best-effort attempt to match the license in multi-licensed crates with the following rules by finding the file in the crates root that best matches the particular license's SPDX identifier. This draft currently doesn't define the exact file matching rules, but the full RFC should probably be more specific here.
+Cargo will attempt to discover license files in the crate's root folder. Cargo will pull the `LICENSE` or `COPYRIGHT` file for single-licensed crates, and will make a best-effort attempt to match the license in multi-licensed crates with the following rules by finding the file in the crates root that best matches the particular license's SPDX identifier. This draft currently doesn't define the exact file matching rules, but the full RFC should probably be more specific here.
 
 ## The `license!()` macro
 
