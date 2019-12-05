@@ -25,9 +25,9 @@ Every single piece of code in the Rust ecosystem, from a simple "Hello, World" e
 To my knowledge, there is no tooling that automatically generates the appropriate upstream license file. As a result, I been unable to find a *single Rust project* that appropriately complies with all of its upstream license agreements. This includes:
 
 - Servo
-- Rustc
 - Ripgrep
 - Rustup
+- Rustc (includes licenses for C dependencies, but not Rust dependencies)
 - Cargo (has LICENSE-THIRD-PARTY file that has not been updated with new dependencies since 2014).
 
 Getting this right is really important, but barely anyone even tries since it's such a massive undertaking. As such, the standard Rust tooling should include tools that Just Do The Right Thing, so that Rust projects can be fearlessly legally compliant.
