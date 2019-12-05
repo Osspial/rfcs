@@ -1,4 +1,4 @@
-- Feature Name: licenses_lang_item
+- Feature Name: lang_level_licenses
 - Start Date: (fill me in with today's date, YYYY-MM-DD)
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
@@ -183,6 +183,7 @@ More complexity in the language infrastructure. Most languages don't seem to pro
 
 - Let the community manage this, and provide a stable way to access the licenses implicitly used by the standard libraries.
 - Standardize `Cargo.toml` fields for specifying all necessary license information, and let third-party crates handle compiling that information into a usable form.
+- Expose `licenses_json` as a structure rather than a JSON string.
 
 # Prior art
 [prior-art]: #prior-art
