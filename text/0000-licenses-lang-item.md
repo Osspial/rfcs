@@ -30,7 +30,7 @@ To my knowledge, there is no tooling that automatically generates the appropriat
 - Rustc (includes licenses for C dependencies, but not Rust dependencies)
 - Cargo (has LICENSE-THIRD-PARTY file that has not been updated with new dependencies since 2014).
 
-Getting this right is really important, but barely anyone even tries since it's such a massive undertaking. As such, the standard Rust tooling should include tools that Just Do The Right Thing, so that Rust projects can be fearlessly legally compliant.
+Getting this right is really important, but barely anyone bothers since it's such a massive undertaking. As such, the standard Rust tooling should include tools that Just Do The Right Thing, so that Rust projects can be fearlessly legally compliant.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -161,7 +161,7 @@ Users can specify `licenses` or `licenses-json` in rustc's `--emit` flag, which 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-Keys in the map should be formatted as a SPDX license identifier, optionally followed by a colon and the copyright holder's name if the license text is customized to each particular copyright holder. This formatting is strictly enforced by Rustc and will result in an error if not followed. If the license identifier contains a colon, it can be escaped with two consecutive colons (`ANNOYING:IDENTIFIER` -> `ANNOYING::IDENTIFIER`).
+Keys in the map should be formatted as a SPDX license identifier (when available), optionally followed by a colon and the copyright holder's name if the license text is customized to each particular copyright holder. If the license identifier contains a colon, it can be escaped with two consecutive colons (`ANNOYING:IDENTIFIER` -> `ANNOYING::IDENTIFIER`).
 
 TODO WRITE REST OF REFERENCE
 
