@@ -216,7 +216,7 @@ Cargo splits the license string into multiple licenses on any of the following p
 - `\bOR\b`
 Additional patterns may be added as discovered in the ecosystem.
 
-Cargo will attempt to discover LICENSE files in the crate's root folder.
+Cargo will attempt to discover LICENSE files in the crate's root folder. Cargo will pull the `LICENSE` or `COPYRIGHT` file for single-licensed crates, and will make a best-effort attempt to match the license in multi-licensed crates with the following rules by finding the file in the crates root that best matches the particular license's SPDX identifier. This draft currently doesn't define the exact file matching rules, but the full RFC should probably be more specific here.
 
 ## The `license!()` macro
 
@@ -262,6 +262,7 @@ More complexity in the language infrastructure. Most languages don't seem to pro
 - Let the community manage this, and provide a stable way to access the licenses implicitly used by the standard libraries.
 - Standardize `Cargo.toml` fields for specifying all necessary license information, and let third-party crates handle compiling that information into a usable form.
 - Instead of having `licenses!()` return a structure, we could have the macro return a rendered license string.
+- Instead of specifying dependency licenses in the top level of the build tree, we could have each crate pass the license information the crate is responsible for into `rustc` and include it in the generated `rlib`. This might actually be the better solution, but I'm not including it as the primary solution in this draft because it's unclear to me how this would interact with `dylib`s and `cdylib`s. Worth discussing more thoroughly.
 
 # Prior art
 [prior-art]: #prior-art
@@ -279,9 +280,9 @@ Both crates provide utilities for listing upstream licenses, and `cargo-deny` pr
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- What parts of the design do you expect to resolve through the RFC process before this gets merged?
-- What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
-- What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
+- We need to figure out the exact process Cargo uses to resolve license files.
+- What should we do when a crate specifies a license in Cargo.toml, but doesn't include the license file in the Cargo package?
+- What should we do when crate's don't specify a license?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
