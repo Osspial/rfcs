@@ -18,7 +18,7 @@
 # Motivation
 [motivation]: #motivation
 
-Every single piece of code in the Rust ecosystem, from a simple "Hello, World" example to a complex application with hundreds of dependencies through Cargo, depends on licensed open-source software. At the lowest level, projects are going to depend on `libcore` (dual-licensed under the MIT and Apache licenses) and `libstd` (`libcore`'s licenses, and assorted licenses from `libstd`'s Cargo dependencies), and most real-world binaries directly and transitively depend on tens or hundreds of libraries from Crates.io. The vast majority of that code is made available under licenses that require attribution to the authors and/or reproduction of the appropriate license notice. Manually compiling and maintaining that information is out of the question for pretty much all users.
+Every single piece of code in the Rust ecosystem, from a simple "Hello, World" example to a complex application with hundreds of dependencies through Cargo, depends on licensed open-source software. At the lowest level, projects depend on `libcore` (dual-licensed under the MIT and Apache licenses) and `libstd` (`libcore`'s licenses, and assorted licenses from `libstd`'s Cargo dependencies), and most real-world binaries directly and transitively depend on tens or hundreds of libraries from Crates.io. The vast majority of that code is made available under licenses that require attribution to the authors and/or reproduction of the appropriate license notice. Manually compiling and maintaining that information is out of the question for pretty much all users.
 
 To my knowledge, there is no tooling that automatically generates the appropriate upstream license file. As a result, I been unable to find a *single Rust project* that appropriately complies with all of its upstream license agreements. This includes:
 
@@ -28,7 +28,7 @@ To my knowledge, there is no tooling that automatically generates the appropriat
 - Rustc (includes licenses for C dependencies, but not Rust dependencies)
 - Cargo (has LICENSE-THIRD-PARTY file that has not been updated with new dependencies since 2014).
 
-Getting this right is really important, but barely anyone bothers since it's such a massive undertaking. As such, the standard Rust tooling should include tools that Just Do The Right Thing, so that Rust projects can be fearlessly legally compliant.
+Getting this right is really important, but barely anyone bothers since it's such a massive undertaking. If *Rust's flagship projects* can't get this right, what hope do average users have to confidently manage it correctly without assistance? As such, the standard Rust tooling should include tools that Just Do The Right Thing, so that Rust projects can be fearlessly legally compliant.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -249,7 +249,7 @@ impl Display for LicenseList {
 }
 ```
 
-We return `&'static LicenseList` instead of `&'static [License]` so that the `Display` trait can be implemented on `licenses!()`'s return type.
+We return `&'static LicenseList` instead of `&'static [License]` so that the `Display` trait can be implemented on `licenses!()`'s return type. The data returned by the macro is adapted from the license data passed into `rustc` via the `--licenses` flag.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -259,10 +259,22 @@ More complexity in the language infrastructure. Most languages don't seem to pro
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
+## Why is this built into the language?
+
+It's entirely valid to ask, "why are we making this a compiler feature instead of a toolchain feature?". It's not immediately clear that that's the best option; license information is admittedly metadata and you can reasonably argue that this process should be entirely handled by Cargo and related tools. This RFC involves the compiler for two reasons:
+
+- `#![no_std]` is a language-level attribute, not a Cargo-level attribute. There needs to be *some* process for determining whether or not `libstd`'s licenses should be included, and Cargo is currently unable to derive this information.
+- The `licenses` macro cannot exist without rustc's involvement. If this were a Cargo-level process, it'd still be possible to embed license information into the crate with build scripts, but that's significantly more finnicky and less easy-to-use than a language-level macro.
+
+Given those points, this RFC decides that it would be easiest to include license processing in the compiler as well as in the Cargo infrastructure. It's worth noting that Cargo may eventually be able to manage `std` - the [`cargo-std-aware` WG](https://github.com/rust-lang/wg-cargo-std-aware) is making progress on that front - but that work will likely take years to complete and this RFC is written for the language as it exists today.
+
+## Alternatives
+
 - Let the community manage this, and provide a stable way to access the licenses implicitly used by the standard libraries.
 - Standardize `Cargo.toml` fields for specifying all necessary license information, and let third-party crates handle compiling that information into a usable form.
 - Instead of having `licenses!()` return a structure, we could have the macro return a rendered license string.
 - Instead of specifying dependency licenses in the top level of the build tree, we could have each crate pass the license information the crate is responsible for into `rustc` and include it in the generated `rlib`. This might actually be the better solution, but I'm not including it as the primary solution in this draft because it's unclear to me how this would interact with `dylib`s and `cdylib`s. Worth discussing more thoroughly.
+- Instead of passing license information via a command-line argument, we could pass it via an environment variable.
 
 # Prior art
 [prior-art]: #prior-art
