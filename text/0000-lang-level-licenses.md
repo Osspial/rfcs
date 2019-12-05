@@ -261,8 +261,7 @@ More complexity in the language infrastructure. Most languages don't seem to pro
 
 - Let the community manage this, and provide a stable way to access the licenses implicitly used by the standard libraries.
 - Standardize `Cargo.toml` fields for specifying all necessary license information, and let third-party crates handle compiling that information into a usable form.
-- Instead of having `licenses!()` return a structure, we could have two macros that return kk
-- Expose `licenses!()` structurally, rather than as a string. It could return `&[License]`, where `License` is defined as:
+- Instead of having `licenses!()` return a structure, we could have the macro return a rendered license string.
 
 # Prior art
 [prior-art]: #prior-art
