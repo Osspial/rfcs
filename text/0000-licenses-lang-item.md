@@ -152,7 +152,7 @@ Two compiler built-in macros are provided to retrieve the license information in
 - `licenses!()`: the human-formatted license information.
 - `licenses_json!()`: the json-formatted license information compiled by Rustc.
 
-The JSON data is exposed so applications can do additional post-processing on the license list.
+Both macros return `&'static str`s. The JSON data is exposed so applications can do additional post-processing on the license list.
 
 ----
 
@@ -182,6 +182,7 @@ More complexity in the language infrastructure. Most languages don't seem to pro
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 - Let the community manage this, and provide a stable way to access the licenses implicitly used by the standard libraries.
+- Standardize `Cargo.toml` fields for specifying all necessary license information, and let third-party crates handle compiling that information into a usable form.
 
 # Prior art
 [prior-art]: #prior-art
