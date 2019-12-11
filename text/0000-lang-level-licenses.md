@@ -280,7 +280,7 @@ Given those points, this RFC decides that it would be easiest to include license
 # Prior art
 [prior-art]: #prior-art
 
-Mozilla Firefox has shell scripts that automatically generate a human-readable license file: https://github.com/mozilla/application-services/blob/master/DEPENDENCIES.md. This isn't entirely complete, as it doesn't contain licenses for Rust's `libstd` or `libcore`, but it's the best I've seen.
+Mozilla Firefox has Python scripts that automatically generate a human-readable license file: https://github.com/mozilla/application-services/blob/master/DEPENDENCIES.md. This isn't entirely complete, as it doesn't contain licenses for Rust's `libstd` or `libcore`, but it's the best I've seen.
 
 ----
 
