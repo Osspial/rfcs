@@ -9,11 +9,10 @@
 - Add a new compiler built-in macro:
     + `licenses!()`: a list of all in-project and upstream licenses.
 - Add to the `rustc` CLI:
-    + `rustc --emit licenses`: emit the human-readable license list as part of the compiler output
-    + `rustc --emit licenses-json`: emit the JSON-formatted license list as part of the compiler output
-    + `rustc --licenses PATH`: path to a JSON-formatted list of the licenses used by user-compiled code
+    + `rustc --lib-licenses (core|std)` (TODO: SOME MECHANISM FOR DISCOVERING STD/CORE LICENSES)
 - Add to `cargo`
     + `[licenses]` section in `Cargo.toml`: configure how Cargo generates the license list passed to `rustc`
+    + `cargo licenses (--format (human|toml|json))?`
 
 # Motivation
 [motivation]: #motivation
@@ -36,6 +35,60 @@ Getting this right is really important, but barely anyone bothers since it's suc
 The standard Rust distribution provides tooling to help automatically manage upstream licenses. At a high level, the tooling can be split into two categories: license *specification* and license *retrieval*.
 
 ## License Specification
+
+### TODO: NAME
+
+```rust
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct License<S = &'static str, A = &'static [&'static str]>
+    where S: Borrow<str>,
+          A: Borrow<[S]>,
+{
+    pub identifier: S,
+    pub copyright_notices: A,
+    pub libraries: A,
+    pub text: S,
+}
+
+impl LicenseList {
+    /// Returns a list of the licenses used by this project.
+    pub fn used() -> &'static LicenseList {
+
+    }
+
+    /// Returns a list of the licenses potentially usable by this project.
+    pub fn available() -> &'static LicenseList {
+
+    }
+}
+
+impl Deref for LicenseList {
+    type Target = [(LicenseId, LicenseInfo)];
+    // implementation
+}
+
+impl Display for LicenseList {
+    // renders the complete human-readable license list
+}
+
+impl Display for LicenseId {
+    // renders the license in human-readable form
+}
+
+impl Display for LicenseInfo {
+    // renders the license in human-readable form
+}
+
+impl Display for (LicenseId, LicenseInfo) {
+
+}
+
+#[licenses_used]
+static LICENSES: &[(LicenseId, LicenseInfo)] = /* licenses */;
+
+#[licenses_available]
+static LICENSES: &[(LicenseId, LicenseInfo)] = /* licenses */;
+```
 
 ### In Rustc
 
@@ -282,13 +335,20 @@ Given those points, this RFC decides that it would be easiest to include license
 
 Mozilla Firefox has Python scripts that automatically generate a human-readable license file: https://github.com/mozilla/application-services/blob/master/DEPENDENCIES.md. This isn't entirely complete, as it doesn't contain licenses for Rust's `libstd` or `libcore`, but it's the best I've seen.
 
+---
+
+https://github.com/mitchellh/golicense
+
 ----
 
 Various crates exist in the ecosystem for listing and managing licenses
 - https://crates.io/crates/cargo-license
 - https://crates.io/crates/cargo-deny
+- https://crates.io/crates/cargo-lichking
+- https://crates.io/crates/cargo-about
 
-Both crates provide utilities for listing upstream licenses, and `cargo-deny` provides utilities for rejecting incompatible licenses (say, the GPL). However, neither crate peeks into `libstd` or `libcore`, and neither crate automatically assembles a human-readable license file.
+All listed crates provide utilities for listing upstream licenses, and `cargo-deny` provides utilities for rejecting incompatible licenses (say, the GPL). However, none of the crates peek into `libstd` or `libcore`, and only `cargo-lichking` and `cargo-about` automatically assemble a human-readable license file. It may be worth looking at building upon the technical work done by these crates when integrating license management into Cargo.
+
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
